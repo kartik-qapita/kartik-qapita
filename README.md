@@ -7,7 +7,6 @@ You can click the Preview link to take a look at your changes.
 --->
 <h2 align="center">DEVOPS</h2>
 
-- 🌱 I’m currently learning **Docker, Kubernetes**
 
 
 <p align="left">
