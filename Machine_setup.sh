@@ -22,8 +22,11 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 unzip awscliv2.zip
 sudo ./aws/install
 
+clear
+
 echo "Enter You AWS Profile Name"
 read awsprofileconfigure
+echo "Enter YOUR ACCESS & SECRET KEY"
 aws configure --profile $awsprofileconfigure
 # Make sure your AWS_PROFILE environment variable is setup
 sleep 3
@@ -63,6 +66,8 @@ EOF
 chmod 600 ~/.ssh/authorized_keys
 
 echo set completion-ignore-case on | sudo tee -a /etc/inputrc
+
+clear
 
 # Make sure git is installed on your machine
 echo "Enter Your Git-Hub Username"
@@ -233,22 +238,18 @@ sudo docker container create -p 5341:5341 -p 8081:80 \
 sudo docker container start q-seq-node
 sudo docker container update --restart always q-seq-node
 
-#Installing VS Code
-
-sudo apt-get install wget gpg
-wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
-sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-rm -f packages.microsoft.gpg
-
-sudo apt install apt-transport-https
-sudo apt update
-sudo apt install code
-
 #Cloning Server & client
 # Clone the server repository and restore nuget packages
 
 git clone git@github.com:qapita/captable-writemodel.git ${QMAP_WORKSPACE}/server
+
+clear
+
+#Nuget key from github
+cd ${QMAP_WORKSPACE}/server/
+echo "ENTER YOUR NUGET KEY"
+read nugetkey
+sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
 
 # restore nuget packages
 pushd ${QMAP_WORKSPACE}/server/src/WebAPI && dotnet restore && popd
@@ -280,14 +281,10 @@ dotnet run /seed
 cd ${QMAP_WORKSPACE}/server/src/WebAPI
 cp appsettings.Development.template.json appsettings.Development.json
 
-dotnet run /setup
+#dotnet run /setup
 
 cd ${QMAP_WORKSPACE}/server/src/Qapita.QMap.UserTaskManagement
 cp appsettings.Development.Template.json appsettings.Development.json
-
-#echo "Enter you NUGET_SECRET_ACCESS_KEY"
-#read nugetsecretkey
-#export NUGET_SECRET_ACCESS_KEY=$nugetsecretkey
 
 # the following command will start the backend services
 #cd ${QMAP_WORKSPACE}/server/
@@ -309,22 +306,36 @@ pushd ${QMAP_WORKSPACE}/client/packages/web
 npm rebuild node-sass
 # to launch the client
 #npm start
+# Installing yarn in global
+echo "Installing yarn globally"
+npm install --global yarn
+echo "Your yarn version is"
+yarn --version
 
+
+# Changing directory to Qmap-Client
+echo "Changing Directory to client"
+cd ${QMAP_WORKSPACE}/client
+# Cleaning previous dependancies from node_modules
+echo "Removing node_modules..."
+yes | lerna clean
+# Removing node_modules inside client
+echo "Removing node_modules inside client"
+rm -rf node_modules
+# Unlink all symlinks
+echo "Unlinking all symlinks"
+yarn unlink-all
+# Link all symlinks
+echo "Linking all symlinks"
+yarn link-all
+# Changing to web package
+echo "Changing to web package"
+cd packages/web
+# Startin web server
+echo "Starting web server"
+#yarn start
 # you will need to wait for a few minutes for the webpack build to complete
 # open https://qmap.qapitacorp.local in chrome
 curl https://qmap.qapitacorp.local
-
-echo "Final Checking"
-
-aws --version
-mongod -version
-sudo systemctl status mongod
-sudo systemctl status eventstore
-sudo docker --version
-sudo docker compose --version
-dotnet --version
-nvm --version
-node -v
-nginx -v
-
-echo ">>Completed Machine Setup<<"
+clear
+echo ">> Machine Setup Completed <<"
