@@ -195,6 +195,19 @@ nvm --version
   # This loads nvm
 EOF
 
+#Installing Seq
+sudo docker image pull datalust/seq
+
+mkdir -p ${QMAP_WORKSPACE}/data/seq
+
+sudo docker container create -p 5341:5341 -p 8081:80 \
+    -v ${QMAP_WORKSPACE}/data/seq:/data \
+    -e ACCEPT_EULA=Y \
+    --name q-seq-node datalust/seq
+
+sudo docker container start q-seq-node
+sudo docker container update --restart always q-seq-node
+
 # Installing NGINX 1.20.2
 (cat << EOF
 deb https://nginx.org/packages/ubuntu/ $(lsb_release -cs) nginx
@@ -220,23 +233,6 @@ echo '127.0.0.1   auth.qapitacorp.local
 127.0.0.1   seq.qapitacorp.local
 127.0.0.1   eventstore.qapitacorp.local' | sudo tee -a /etc/hosts > /dev/null
 
-sudo mkdir -p /etc/ssl/{certs,private}
-sudo cp ~/machine-setup/certificates/qapitacorp.local-bundle.crt /etc/ssl/certs
-sudo cp ~/machine-setup/certificates/qapitacorp.local.key /etc/ssl/private
-sudo chmod 600 /etc/ssl/private
-
-#Installing Seq
-sudo docker image pull datalust/seq
-
-mkdir -p ${QMAP_WORKSPACE}/data/seq
-
-sudo docker container create -p 5341:5341 -p 8081:80 \
-    -v ${QMAP_WORKSPACE}/data/seq:/data \
-    -e ACCEPT_EULA=Y \
-    --name q-seq-node datalust/seq
-
-sudo docker container start q-seq-node
-sudo docker container update --restart always q-seq-node
 
 #Cloning Server & client
 # Clone the server repository and restore nuget packages
