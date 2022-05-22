@@ -243,12 +243,17 @@ echo '127.0.0.1   auth.qapitacorp.local
 127.0.0.1   seq.qapitacorp.local
 127.0.0.1   eventstore.qapitacorp.local' | sudo tee -a /etc/hosts > /dev/null
 
-export QMAP_WORKSPACE=~/qmap-workspace
 # configure nginx to reverse proxy to our local services
-sudo cp ~/machine-setup/certificates/qapitacorp.local /etc/nginx/sites-available
-# for mac
-# sudo cp ${QMAP_WORKSPACE}/server/nginx/qapitacorp.local /usr/local/etc/nginx/servers
-sudo ln -s /etc/nginx/sites-available/qapitacorp.local /etc/nginx/sites-enabled/qapitacorp.local
+
+if [ -d "/etc/nginx/sites-available" ] && [ -d "/etc/nginx/sites-enabled" ];
+then
+    sudo cp ~/machine-setup/certificates/qapitacorp.local /etc/nginx/sites-available
+    sudo ln -s /etc/nginx/sites-available/qapitacorp.local /etc/nginx/sites-enabled/qapitacorp.local
+else
+    sudo mkdir -p /etc/nginx/{sites-available,sites-enabled}
+    sudo cp ~/machine-setup/certificates/qapitacorp.local /etc/nginx/sites-available
+    sudo ln -s /etc/nginx/sites-available/qapitacorp.local /etc/nginx/sites-enabled/qapitacorp.local
+fi
 
 sudo mkdir -p /etc/ssl/certs /etc/ssl/private
 
