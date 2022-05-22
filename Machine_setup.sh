@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-echo "QAPITA MACHINE SETUP"
+echo "QAPITA : 💻 MACHINE-SETUP"
+
 # some basic software
 sudo apt install -y \
     openssh-server tmux git \
@@ -9,7 +10,6 @@ sudo apt install -y \
     curl wget \
     gnupg-agent \
     software-properties-common
-
 
 # create folders for storing files required for setting up QapMap
 mkdir -p ~/machine-setup/{certificates,eventstore,qmap-setup,mongodb} ~/local/.bin
@@ -24,6 +24,7 @@ sudo ./aws/install
 
 clear
 
+#Configuring AWS_CREDENTIALS
 echo "Enter You AWS Profile Name"
 read awsprofileconfigure
 echo "Enter YOUR ACCESS & SECRET KEY"
@@ -69,7 +70,7 @@ echo set completion-ignore-case on | sudo tee -a /etc/inputrc
 
 clear
 
-# Make sure git is installed on your machine
+# Configuring Git
 echo "Enter Your Git-Hub Username"
 read githubusername
 git config --global user.name $githubusername
@@ -233,29 +234,9 @@ echo '127.0.0.1   auth.qapitacorp.local
 127.0.0.1   seq.qapitacorp.local
 127.0.0.1   eventstore.qapitacorp.local' | sudo tee -a /etc/hosts > /dev/null
 
-
-#Cloning Server & client
-# Clone the server repository and restore nuget packages
-
-git clone git@github.com:qapita/captable-writemodel.git ${QMAP_WORKSPACE}/server
-
-clear
-
-#Nuget key from github
-cd ${QMAP_WORKSPACE}/server/
-echo "ENTER YOUR NUGET KEY"
-read nugetkey
-sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
-
-# restore nuget packages
-pushd ${QMAP_WORKSPACE}/server/src/WebAPI && dotnet restore && popd
-pushd ${QMAP_WORKSPACE}/server/src/IDP && dotnet restore && popd
-pushd ${QMAP_WORKSPACE}/server/src/WebConsole && dotnet restore && popd
-pushd ${QMAP_WORKSPACE}/server/src/Qapita.QMap.UserTaskManagement && dotnet restore && popd
-
+export QMAP_WORKSPACE=~/qmap-workspace
 # configure nginx to reverse proxy to our local services
-
-sudo cp ${QMAP_WORKSPACE}/server/nginx/qapitacorp.local /etc/nginx/sites-available
+sudo cp ~/machine-setup/certificates/qapitacorp.local /etc/nginx/sites-available
 # for mac
 # sudo cp ${QMAP_WORKSPACE}/server/nginx/qapitacorp.local /usr/local/etc/nginx/servers
 sudo ln -s /etc/nginx/sites-available/qapitacorp.local /etc/nginx/sites-enabled/qapitacorp.local
@@ -268,6 +249,27 @@ sudo chmod 600 /etc/ssl/private/qapitacorp.local.key
 
 # restart nginx so that our changes are reflected
 sudo systemctl restart nginx
+
+
+#Cloning Server & client
+export QMAP_WORKSPACE=~/qmap-workspace
+# Clone the server repository and restore nuget packages
+git clone git@github.com:qapita/captable-writemodel.git ${QMAP_WORKSPACE}/server
+
+clear
+
+#Nuget key from github
+cd ${QMAP_WORKSPACE}/server/
+#Replace Default value with Generated Nuget Key in nuget.config
+echo "ENTER YOUR NUGET KEY"
+read nugetkey
+sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+
+# restore nuget packages
+pushd ${QMAP_WORKSPACE}/server/src/WebAPI && dotnet restore && popd
+pushd ${QMAP_WORKSPACE}/server/src/IDP && dotnet restore && popd
+pushd ${QMAP_WORKSPACE}/server/src/WebConsole && dotnet restore && popd
+pushd ${QMAP_WORKSPACE}/server/src/Qapita.QMap.UserTaskManagement && dotnet restore && popd
 
 # make sure your eventstore and mongodb are running before the following commands are executed
 cd ${QMAP_WORKSPACE}/server/src/IDP
@@ -288,7 +290,7 @@ cp appsettings.Development.Template.json appsettings.Development.json
 
 
 # you can verify that the CapTable service is running fine by executing the following command:
-curl https://captable.qapitacorp.local/api/v1/static/data
+#curl https://captable.qapitacorp.local/api/v1/static/data
 
 # Clone the qmap client repository
 git clone git@github.com:qapita/captable-web.git ${QMAP_WORKSPACE}/client
@@ -307,8 +309,6 @@ echo "Installing yarn globally"
 npm install --global yarn
 echo "Your yarn version is"
 yarn --version
-
-
 # Changing directory to Qmap-Client
 echo "Changing Directory to client"
 cd ${QMAP_WORKSPACE}/client
@@ -332,6 +332,8 @@ echo "Starting web server"
 #yarn start
 # you will need to wait for a few minutes for the webpack build to complete
 # open https://qmap.qapitacorp.local in chrome
-curl https://qmap.qapitacorp.local
+#curl https://qmap.qapitacorp.local
 clear
-echo ">> Machine Setup Completed <<"
+
+echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, node "
+echo ">> 🎉 Machine-Setup 💻 Completed <<"
