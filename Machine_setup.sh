@@ -10,6 +10,15 @@ sudo apt install -y \
     curl wget \
     gnupg-agent \
     software-properties-common
+ 
+echo "ssh key"
+if [ -d ~/.ssh ]
+then
+    echo "Directory .ssh exists."
+else
+    echo "Didnt find .ssh, Please generate ssh key and add it to GitHub as mentioned in machine-setup guide"
+    exit
+fi
 
 # create folders for storing files required for setting up QapMap
 mkdir -p ~/machine-setup/{certificates,eventstore,qmap-setup,mongodb} ~/local/.bin
@@ -58,7 +67,7 @@ export PATH=~/.local/bin:\$PATH
 export QMAP_WORKSPACE=${QMAP_WORKSPACE}
 EOF
 
-mkdir -p ~/.ssh
+# mkdir -p ~/.ssh
 
 cat << EOF >> ~/.ssh/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCM71oLD28cZBv7bF1hy0VdzktED1BpPqWoRNVxm2eu+GysBwIRSrCjH/iVNvnkQTYex89VounL/XFMazCN2Wy3RxgpScKoIY+hic8o3iGt+3ms9kl8SwQNd17TovLoVPa42jWsCAM+EMGliiWxab5IkxSpQk6yGhRY0D/svaqyuRk0O+m0ry8uMHaQRX8q0gHEpm3nzNxlX7adFMUnz9fPigWLAP0FK+J9rAeWNoetbpVIQVPN7sMeuqPY/93qnJhQ9mPSOpxJRMVOQTMk2BPXuZu9MUc6O1XFf76rKafRCW99AekQDQHcwwdd3plE8Gr+NwcsnSFN0n7BYl5QjQnV
