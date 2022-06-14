@@ -10,6 +10,15 @@ sudo apt install -y \
     curl wget \
     gnupg-agent \
     software-properties-common
+ 
+echo "ssh key"
+if [ -d ~/.ssh ]
+then
+    echo "Directory .ssh exists."
+else
+    echo "Didnt find .ssh, Please generate ssh key and add it to GitHub as mentioned in machine-setup guide"
+    exit
+fi
 
 #Installing VS Code
 printf 'Do you wish to install VS Code (y/n)? '
@@ -87,7 +96,7 @@ export PATH=~/.local/bin:\$PATH
 export QMAP_WORKSPACE=${QMAP_WORKSPACE}
 EOF
 
-mkdir -p ~/.ssh
+# mkdir -p ~/.ssh
 
 cat << EOF >> ~/.ssh/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCM71oLD28cZBv7bF1hy0VdzktED1BpPqWoRNVxm2eu+GysBwIRSrCjH/iVNvnkQTYex89VounL/XFMazCN2Wy3RxgpScKoIY+hic8o3iGt+3ms9kl8SwQNd17TovLoVPa42jWsCAM+EMGliiWxab5IkxSpQk6yGhRY0D/svaqyuRk0O+m0ry8uMHaQRX8q0gHEpm3nzNxlX7adFMUnz9fPigWLAP0FK+J9rAeWNoetbpVIQVPN7sMeuqPY/93qnJhQ9mPSOpxJRMVOQTMk2BPXuZu9MUc6O1XFf76rKafRCW99AekQDQHcwwdd3plE8Gr+NwcsnSFN0n7BYl5QjQnV
@@ -263,12 +272,17 @@ echo '127.0.0.1   auth.qapitacorp.local
 127.0.0.1   seq.qapitacorp.local
 127.0.0.1   eventstore.qapitacorp.local' | sudo tee -a /etc/hosts > /dev/null
 
-export QMAP_WORKSPACE=~/qmap-workspace
 # configure nginx to reverse proxy to our local services
-sudo cp ~/machine-setup/certificates/qapitacorp.local /etc/nginx/sites-available
-# for mac
-# sudo cp ${QMAP_WORKSPACE}/server/nginx/qapitacorp.local /usr/local/etc/nginx/servers
-sudo ln -s /etc/nginx/sites-available/qapitacorp.local /etc/nginx/sites-enabled/qapitacorp.local
+
+if [ -d "/etc/nginx/sites-available" ] && [ -d "/etc/nginx/sites-enabled" ];
+then
+    sudo cp ~/machine-setup/certificates/qapitacorp.local /etc/nginx/sites-available
+    sudo ln -s /etc/nginx/sites-available/qapitacorp.local /etc/nginx/sites-enabled/qapitacorp.local
+else
+    sudo mkdir -p /etc/nginx/{sites-available,sites-enabled}
+    sudo cp ~/machine-setup/certificates/qapitacorp.local /etc/nginx/sites-available
+    sudo ln -s /etc/nginx/sites-available/qapitacorp.local /etc/nginx/sites-enabled/qapitacorp.local
+fi
 
 sudo mkdir -p /etc/ssl/certs /etc/ssl/private
 
