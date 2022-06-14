@@ -11,6 +11,35 @@ sudo apt install -y \
     gnupg-agent \
     software-properties-common
 
+#Installing VS Code
+printf 'Do you wish to install VS Code (y/n)? '
+read installcode
+
+if [ "$installcode" != "${installcode#[Yy]}" ] ;then
+  sudo apt-get install wget gpg
+  wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+  sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+  sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+  rm -f packages.microsoft.gpg
+  sudo apt update
+  sudo apt install code
+else
+    echo "VS Code Installation skipped"
+fi
+
+#Installing Microsoft Teams
+printf 'Do you wish to install Microsoft Teams (y/n)? '
+read installteams
+
+if [ "$installteams" != "${installteams#[Yy]}" ] ;then
+  curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+  sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/ms-teams stable main" > /etc/apt/sources.list.d/teams.list'
+  sudo apt update
+  sudo apt install teams
+else
+    echo "Microsoft Teams Installation Skipped"
+fi
+
 # create folders for storing files required for setting up QapMap
 mkdir -p ~/machine-setup/{certificates,eventstore,qmap-setup,mongodb} ~/local/.bin
 
@@ -22,7 +51,7 @@ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip
 unzip awscliv2.zip
 sudo ./aws/install
 
-clear
+clear -x
 
 #Configuring AWS_CREDENTIALS
 echo "Enter You AWS Profile Name"
@@ -68,7 +97,7 @@ chmod 600 ~/.ssh/authorized_keys
 
 echo set completion-ignore-case on | sudo tee -a /etc/inputrc
 
-clear
+clear -x
 
 # Configuring Git
 echo "Enter Your Git-Hub Username"
@@ -159,7 +188,7 @@ sudo usermod -aG docker ${USER}
 # Install .NET
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
-sudo apt-get update; \
+sudo apt-get update \
   sudo apt-get install -y apt-transport-https && \
   sudo apt-get update && \
   sudo apt-get install -y dotnet-sdk-6.0
@@ -256,7 +285,7 @@ export QMAP_WORKSPACE=~/qmap-workspace
 # Clone the server repository and restore nuget packages
 git clone git@github.com:qapita/captable-writemodel.git ${QMAP_WORKSPACE}/server
 
-clear
+clear -x
 
 #Nuget key from github
 cd ${QMAP_WORKSPACE}/server/
@@ -333,7 +362,7 @@ echo "Starting web server"
 # you will need to wait for a few minutes for the webpack build to complete
 # open https://qmap.qapitacorp.local in chrome
 #curl https://qmap.qapitacorp.local
-clear
+clear -x
 
-echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, node "
+echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, Node"
 echo ">> 🎉 Machine-Setup 💻 Completed <<"
