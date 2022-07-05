@@ -63,15 +63,18 @@ sudo ./aws/install
 clear -x
 
 #Configuring AWS_CREDENTIALS
-echo "Enter You AWS Profile Name"
-read awsprofileconfigure
-echo "Enter YOUR ACCESS & SECRET KEY"
-aws configure --profile $awsprofileconfigure
+
+aws configure sso
+
+#echo "Enter You AWS Profile Name"
+#read awsprofileconfigure
+#echo "Enter YOUR ACCESS & SECRET KEY"
+#aws configure --profile $awsprofileconfigure
 # Make sure your AWS_PROFILE environment variable is setup
-sleep 3
+#sleep 3
 # and your AWS credentials are configured in ~/.aws folder
-export AWS_PROFILE=$awsprofileconfigure
-export AWS_REGION=ap-south-1
+#export AWS_PROFILE=$awsprofileconfigure
+#export AWS_REGION=ap-south-1
 echo "AWS Profile Configured"
 # Configure your AWS environment (you should get the credentials if you don't already have one)
 # the following YouTube video will help you with instructions for configuring the AWS environment
@@ -79,10 +82,11 @@ echo "AWS Profile Configured"
 
 
 # copy files from qapita-development s3 bucket to ~/machine-setup
-aws s3 cp s3://qapita-development/certificates ~/machine-setup/certificates --recursive
-aws s3 cp s3://qapita-development/EventStore ~/machine-setup/eventstore --recursive
-aws s3 cp s3://qapita-development/qmap-setup ~/machine-setup/qmap-setup --recursive
-aws s3 cp s3://qapita-development/mongodb ~/machine-setup/mongodb --recursive
+aws s3 cp s3://qapita-dev-development/certificates ~/machine-setup/certificates --recursive
+aws s3 cp s3://qapita-dev-development/EventStore/v21.10.5/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb ~/machine-setup/eventstore --recursive
+aws s3 cp s3://qapita-dev-development/EventStore/eventstore.conf ~/machine-setup/eventstore --recursive
+aws s3 cp s3://qapita-dev-development/EventStore/eventstore-1.pfx ~/machine-setup/eventstore --recursive
+aws s3 cp s3://qapita-dev-development/mongodb ~/machine-setup/mongodb --recursive
 
 export QMAP_WORKSPACE=~/qmap-workspace
 
@@ -160,7 +164,7 @@ sudo systemctl status mongod
 
 # check if /mongodb-data/db folder has files in it
 # if /mongodb-data/db folder is empty, then something went wrong
-sudo dpkg -i ~/machine-setup/eventstore/EventStore-Commercial-Linux-v21.10.1.ubuntu-20.04.deb
+sudo dpkg -i ~/machine-setup/eventstore/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
 sudo -u eventstore -g eventstore cp ~/machine-setup/eventstore/eventstore.conf /etc/eventstore
 sudo -u eventstore -g eventstore cp ~/machine-setup/eventstore/eventstore-1.pfx /etc/eventstore
 
