@@ -176,7 +176,7 @@ sudo systemctl status mongod
 # if /mongodb-data/db folder is empty, then something went wrong
 sudo dpkg -i ~/machine-setup/eventstore/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
 sudo -u eventstore -g eventstore cp ~/machine-setup/eventstore/eventstore.conf /etc/eventstore
-sudo -u eventstore -g eventstore cp ~/machine-setup/eventstore/eventstore-1.pfx /etc/eventstore
+sudo -u eventstore -g eventstore cp ~/machine-setup/eventstore/eventstore.pfx /etc/eventstore
 
 sudo mkdir -p /eventstoredb-data/{db,log}
 sudo chown -R eventstore:eventstore /eventstoredb-data
@@ -208,12 +208,10 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo usermod -aG docker ${USER}
 
 # Install .NET
+
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
-sudo apt-get update \
-  sudo apt-get install -y apt-transport-https && \
-  sudo apt-get update && \
-  sudo apt-get install -y dotnet-sdk-6.0
+sudo apt-get update && sudo apt-get install -y dotnet-sdk-6.0
 
 # You should now be able to run the following command
 dotnet --version
