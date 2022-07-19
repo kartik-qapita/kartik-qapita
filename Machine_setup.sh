@@ -64,28 +64,38 @@ clear -x
 
 #Configuring AWS_CREDENTIALS
 
-aws configure sso
+echo "Enter You AWS Profile Name"
+read awsprofileconfigure
 
-#echo "Enter You AWS Profile Name"
-#read awsprofileconfigure
+aws configure sso
 #echo "Enter YOUR ACCESS & SECRET KEY"
 #aws configure --profile $awsprofileconfigure
 # Make sure your AWS_PROFILE environment variable is setup
 #sleep 3
 # and your AWS credentials are configured in ~/.aws folder
-#export AWS_PROFILE=$awsprofileconfigure
-#export AWS_REGION=ap-south-1
-echo "AWS Profile Configured"
+export AWS_PROFILE=$awsprofileconfigure
+export AWS_REGION=ap-south-1
+#echo "AWS Profile Configured"
+#to confirm that aws is configured
+aws s3 ls
+
+printf 'Are the AWS S3 Buckets Listed above (y/n)? '
+read awss3
+
+if [ "$awss3" != "${awss3#[Yy]}" ] ;then
+    echo "AWS Profile is configured"
+else
+    echo "AWS Profile Configuration not completed, please check the AWS SSO Configuration Guide"
+    exit
+fi
+
 # Configure your AWS environment (you should get the credentials if you don't already have one)
 # the following YouTube video will help you with instructions for configuring the AWS environment
 # https://www.youtube.com/watch?v=FOK5BPy30HQ
 
-
 # copy files from qapita-development s3 bucket to ~/machine-setup
 aws s3 cp s3://qapita-dev-development/certificates ~/machine-setup/certificates --recursive
-aws s3 cp s3://qapita-dev-development/EventStore/v21.10.5/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb ~/machine-setup/eventstore --recursive
-aws s3 cp s3://qapita-dev-development/EventStore/eventstore.conf ~/machine-setup/eventstore --recursive
-aws s3 cp s3://qapita-dev-development/EventStore/eventstore-1.pfx ~/machine-setup/eventstore --recursive
+aws s3 cp s3://qapita-dev-development/EventStore/v21.10.5/ ~/machine-setup/eventstore --recursive
 aws s3 cp s3://qapita-dev-development/mongodb ~/machine-setup/mongodb --recursive
 
 export QMAP_WORKSPACE=~/qmap-workspace
@@ -196,7 +206,6 @@ sudo chmod +x /usr/local/bin/docker-compose
 # add current user to the docker group, this will allow you to run docker command without sudo
 # You will have to restart the computer for this to be effective
 sudo usermod -aG docker ${USER}
-
 
 # Install .NET
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
@@ -375,7 +384,7 @@ yarn link-all
 echo "Changing to web package"
 cd packages/web
 # Startin web server
-echo "Starting web server"
+#echo "Starting web server"
 #yarn start
 # you will need to wait for a few minutes for the webpack build to complete
 # open https://qmap.qapitacorp.local in chrome
