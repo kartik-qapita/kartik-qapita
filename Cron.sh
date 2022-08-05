@@ -8,5 +8,5 @@ sudo wget https://raw.githubusercontent.com/kartik-qapita/kartik-qapita/main/Wal
 sudo chmod +x /usr/share/qapita/Wall.sh
 
 sudo crontab -l > wallpaper                                                                        
-echo "* * * * * /usr/share/qapita/Wall.sh >/dev/null 2>&1" >> wallpaper                            
+echo "0 */1 * * * /usr/share/qapita/Wall.sh >/dev/null 2>&1" >> wallpaper                            
 sudo crontab wallpaper
