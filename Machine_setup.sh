@@ -64,7 +64,7 @@ clear -x
 
 #Configuring AWS_CREDENTIALS
 
-echo "Enter You AWS Profile Name"
+echo "Enter You AWS Profile Name : (eg. yourname-qapita)"
 read awsprofileconfigure
 
 aws configure sso
@@ -338,6 +338,9 @@ cp appsettings.Development.template.json appsettings.Development.json
 cd ${QMAP_WORKSPACE}/server/src/Qapita.QMap.UserTaskManagement
 cp appsettings.Development.Template.json appsettings.Development.json
 
+cd ${QMAP_WORKSPACE}/server/src/WebConsole
+cp appsettings.Development.Template.json appsettings.Development.json
+
 # the following command will start the backend services
 #cd ${QMAP_WORKSPACE}/server/
 #./start-services.sh
@@ -389,5 +392,5 @@ cd packages/web
 #curl https://qmap.qapitacorp.local
 clear -x
 
-echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, Node"
+echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, Node, SEQ"
 echo ">> 🎉 Machine-Setup 💻 Completed <<"
