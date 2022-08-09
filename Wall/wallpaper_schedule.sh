@@ -4,7 +4,6 @@
 sudo mkdir -p /usr/share/qapita
 
 
-
 cd /usr/share/qapita
 
 sudo apt install libglib2.0-dev-bin
@@ -17,6 +16,8 @@ sudo chmod +x /usr/share/qapita/wall.sh
 
 cd 
 
-sudo crontab -l > wallpaper                                                                        
-echo "0 */1 * * * /usr/share/qapita/wall.sh >/dev/null 2>&1" >> wallpaper                            
+sudo crontab -l > wallpaper
+
+echo "0 */1 * * * /usr/share/qapita/wall.sh >/dev/null 2>&1" >> wallpaper
+
 sudo crontab wallpaper
