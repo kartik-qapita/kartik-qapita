@@ -5,7 +5,7 @@ echo "Wallpaper Setup"
 
 sudo rm -rf /usr/share/backgrounds/Qapita.png
 
-sudo wget https://github.com/kartik-qapita/kartik-qapita/blob/main/Wall/Qapita.png -P /usr/share/backgrounds
+sudo wget https://raw.githubusercontent.com/kartik-qapita/kartik-qapita/main/Wall/Qapita.png -P /usr/share/backgrounds
 
 gsettings set org.gnome.desktop.background picture-uri "file:////usr/share/backgrounds/Qapita.png"
 
