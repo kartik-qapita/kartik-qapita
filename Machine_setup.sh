@@ -10,7 +10,7 @@ sudo apt install -y \
     curl wget \
     gnupg-agent \
     software-properties-common
- 
+
 echo "ssh key"
 if [ -d ~/.ssh ]
 then
@@ -64,7 +64,7 @@ clear -x
 
 #Configuring AWS_CREDENTIALS
 
-echo "Enter You AWS Profile Name : (eg. yourname-qapita)"
+echo "Enter You AWS Profile Name : (eg. qapita-yourname)"
 read awsprofileconfigure
 
 aws configure sso
@@ -98,16 +98,16 @@ aws s3 cp s3://qapita-dev-development/certificates ~/machine-setup/certificates 
 aws s3 cp s3://qapita-dev-development/EventStore/v21.10.5/ ~/machine-setup/eventstore --recursive
 aws s3 cp s3://qapita-dev-development/mongodb ~/machine-setup/mongodb --recursive
 
-export QMAP_WORKSPACE=~/qmap-workspace
+export QAPITA_WORKSPACE=~/qapita-dev-workspace
 
 cat << EOF >> ~/.bashrc
 export PATH=~/.local/bin:\$PATH
-export QMAP_WORKSPACE=${QMAP_WORKSPACE}
+export QAPITA_WORKSPACE=${QAPITA_WORKSPACE}
 EOF
 
 cat << EOF >> ~/.zshrc
 export PATH=~/.local/bin:\$PATH
-export QMAP_WORKSPACE=${QMAP_WORKSPACE}
+export QAPITA_WORKSPACE=${QAPITA_WORKSPACE}
 EOF
 
 # mkdir -p ~/.ssh
@@ -152,10 +152,10 @@ sudo update-ca-certificates
 
 # Installing MongoDB
 # https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
 
-# Note: this is specific to Ubuntu 18.04
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+# Note: this is specific to Ubuntu 20.04
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
 
 sudo apt-get update
 sudo apt-get install -y mongodb-org
@@ -218,21 +218,15 @@ sudo apt-get install -y dotnet-sdk-6.0
 dotnet --version
 # if the above command fails, it means dotnet core is not installed
 
-#Intall nvm
-curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
-
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
-
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
 nvm --version
 
-# Install node version
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.36.0/install.sh | bash
-
-export NODE_LTS=v14.16.1
+# Install node
+export NODE_LTS=`nvm ls-remote --lts | tail -n 1 | awk 'BEGIN{FS=" "} {print $1}'`
 nvm install ${NODE_LTS}
 nvm alias default ${NODE_LTS}
 nvm use ${NODE_LTS}
@@ -249,10 +243,10 @@ EOF
 #Installing Seq
 sudo docker image pull datalust/seq
 
-mkdir -p ${QMAP_WORKSPACE}/data/seq
+mkdir -p ${QAPITA_WORKSPACE}/data/seq
 
 sudo docker container create -p 5341:5341 -p 8081:80 \
-    -v ${QMAP_WORKSPACE}/data/seq:/data \
+    -v ${QAPITA_WORKSPACE}/data/seq:/data \
     -e ACCEPT_EULA=Y \
     --name q-seq-node datalust/seq
 
@@ -307,90 +301,105 @@ sudo systemctl restart nginx
 
 
 #Cloning Server & client
-export QMAP_WORKSPACE=~/qmap-workspace
-# Clone the server repository and restore nuget packages
-git clone git@github.com:qapita/captable-writemodel.git ${QMAP_WORKSPACE}/server
+export QAPITA_WORKSPACE=~/qapita-dev-workspace
 
-clear -x
+PS3='Please select any option to clone project to your local: '
+options=("QapMap" "QapMatch" "Liquidity" "Open-Marketplace" "QFund" "Quit")
+select opt in "${options[@]}"
+do
+    case $opt in
+        "QapMap")
+            echo "Cloning the $opt Project Repos"
+            # Clone the server repository and restore nuget packages
+            git clone git@github.com:qapita/captable-writemodel.git ${QAPITA_WORKSPACE}/qmap/server
+            cd ${QAPITA_WORKSPACE}/qmap/server/
+            #Replace Default value with Generated Nuget Key in nuget.config
+            echo "ENTER YOUR NUGET KEY"
+            read nugetkey
+            sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+            pushd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/qmap/server/src/IDP && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/qmap/server/src/WebConsole && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/qmap/server/src/Qapita.QMap.UserTaskManagement && dotnet restore && popd
+            cd ${QAPITA_WORKSPACE}/qmap/server/src/IDP
+            cp appsettings.Development.Template.json appsettings.Development.json
+            dotnet run /seed
+            cd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI
+            cp appsettings.Development.template.json appsettings.Development.json
+            cd ${QAPITA_WORKSPACE}/qmap/server/src/Qapita.QMap.UserTaskManagement
+            cp appsettings.Development.Template.json appsettings.Development.json
+            cd ${QAPITA_WORKSPACE}/qmap/server/src/WebConsole
+            cp appsettings.Development.Template.json appsettings.Development.json
+            #client
+            git clone git@github.com:qapita/captable-web.git ${QAPITA_WORKSPACE}/qmap/client
+            sudo apt install -y build-essential
+            pushd ${QAPITA_WORKSPACE}/qmap/client && lerna bootstrap && popd
+            pushd ${QAPITA_WORKSPACE}/qmap/client/packages/web
+            npm rebuild node-sass
+            echo "Installing yarn globally"
+            npm install --global yarn
+            echo "Your yarn version is"
+            yarn --version
+            echo "Changing Directory to client"
+            cd ${QAPITA_WORKSPACE}/qmap/client
+            echo "Removing node_modules..."
+            yes | lerna clean
+            echo "Removing node_modules inside client"
+            rm -rf node_modules
+            echo "Unlinking all symlinks"
+            yarn unlink-all
+            echo "Linking all symlinks"
+            yarn link-all
+            echo "Changing to web package"
+            cd packages/web
+            ;;
+        "QapMatch")
+            echo "Cloning the $opt Project Repos"
+            git clone git@github.com:qapita/qmatch-org-liquidity-event.git ${QAPITA_WORKSPACE}/qapmatch/server
+            cd ${QAPITA_WORKSPACE}/qapmatch/server/
+            echo "ENTER YOUR NUGET KEY"
+            read nugetkey
+            sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+            #client
+            git clone git@github.com:qapita/qapmatch-client.git ${QAPITA_WORKSPACE}/qapmatch/client
+            ;;
+        "Liquidity")
+            echo "Cloning the $opt Project Repos"
+            git clone git@github.com:qapita/qap-liquidity-server.git ${QAPITA_WORKSPACE}/liquidity/server
+            cd ${QAPITA_WORKSPACE}/liquidity/server/
+            echo "ENTER YOUR NUGET KEY"
+            read nugetkey
+            sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+            #client
+            git clone git@github.com:qapita/qap-liquidity-client.git ${QAPITA_WORKSPACE}/liquidity/client
+            ;;
+        "Open-Marketplace")
+            echo "Cloning the $opt Project Repos"
+            git clone git@github.com:qapita/qap-match-open.server.git ${QAPITA_WORKSPACE}/open-marketplace/server
+            cd ${QAPITA_WORKSPACE}/open-marketplace/server/
+            echo "ENTER YOUR NUGET KEY"
+            read nugetkey
+            sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+            #client
+            git clone git@github.com:qapita/qap-match-open.client.git ${QAPITA_WORKSPACE}/open-marketplace/client
+            ;;
+        "QFund")
+            echo "Cloning the $opt Project Repos"
+            git clone git@github.com:qapita/qap-fund-mgmt-server.git ${QAPITA_WORKSPACE}/qfund/server
+            cd ${QAPITA_WORKSPACE}/open-marketplace/server/
+            echo "ENTER YOUR NUGET KEY"
+            read nugetkey
+            sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+            #client
+            git clone git@github.com:qapita/qap-fund-mgmt-client.git ${QAPITA_WORKSPACE}/qfund/client
+            ;;
+        "Quit")
+            break
+            ;;
+        *) echo "invalid option $REPLY";;
+    esac
+done
 
-#Nuget key from github
-cd ${QMAP_WORKSPACE}/server/
-#Replace Default value with Generated Nuget Key in nuget.config
-echo "ENTER YOUR NUGET KEY"
-read nugetkey
-sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
-
-# restore nuget packages
-pushd ${QMAP_WORKSPACE}/server/src/WebAPI && dotnet restore && popd
-pushd ${QMAP_WORKSPACE}/server/src/IDP && dotnet restore && popd
-pushd ${QMAP_WORKSPACE}/server/src/WebConsole && dotnet restore && popd
-pushd ${QMAP_WORKSPACE}/server/src/Qapita.QMap.UserTaskManagement && dotnet restore && popd
-
-# make sure your eventstore and mongodb are running before the following commands are executed
-cd ${QMAP_WORKSPACE}/server/src/IDP
-cp appsettings.Development.Template.json appsettings.Development.json
-dotnet run /seed
-
-cd ${QMAP_WORKSPACE}/server/src/WebAPI
-cp appsettings.Development.template.json appsettings.Development.json
-
-#dotnet run /setup
-
-cd ${QMAP_WORKSPACE}/server/src/Qapita.QMap.UserTaskManagement
-cp appsettings.Development.Template.json appsettings.Development.json
-
-cd ${QMAP_WORKSPACE}/server/src/WebConsole
-cp appsettings.Development.Template.json appsettings.Development.json
-
-# the following command will start the backend services
-#cd ${QMAP_WORKSPACE}/server/
-#./start-services.sh
-
-
-# you can verify that the CapTable service is running fine by executing the following command:
-#curl https://captable.qapitacorp.local/api/v1/static/data
-
-# Clone the qmap client repository
-git clone git@github.com:qapita/captable-web.git ${QMAP_WORKSPACE}/client
-
-# required to build node-sass
-sudo apt install -y build-essential
-
-# bootstrap the lerna packages
-pushd ${QMAP_WORKSPACE}/client && lerna bootstrap && popd
-pushd ${QMAP_WORKSPACE}/client/packages/web
-npm rebuild node-sass
-# to launch the client
-#npm start
-# Installing yarn in global
-echo "Installing yarn globally"
-npm install --global yarn
-echo "Your yarn version is"
-yarn --version
-# Changing directory to Qmap-Client
-echo "Changing Directory to client"
-cd ${QMAP_WORKSPACE}/client
-# Cleaning previous dependancies from node_modules
-echo "Removing node_modules..."
-yes | lerna clean
-# Removing node_modules inside client
-echo "Removing node_modules inside client"
-rm -rf node_modules
-# Unlink all symlinks
-echo "Unlinking all symlinks"
-yarn unlink-all
-# Link all symlinks
-echo "Linking all symlinks"
-yarn link-all
-# Changing to web package
-echo "Changing to web package"
-cd packages/web
-# Startin web server
-#echo "Starting web server"
-#yarn start
-# you will need to wait for a few minutes for the webpack build to complete
-# open https://qmap.qapitacorp.local in chrome
-#curl https://qmap.qapitacorp.local
 clear -x
 
 echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, Node, SEQ"
