@@ -360,6 +360,12 @@ do
             echo "ENTER YOUR NUGET KEY"
             read nugetkey
             sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+            pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/WebAPI && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/Application && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/Infrastructure && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/Domain && dotnet restore && popd
+            cd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI
+            cp appsettings.Development.Template.json appsettings.Development.json
             #client
             git clone git@github.com:qapita/qapmatch-client.git ${QAPITA_WORKSPACE}/qapmatch/client
             ;;
@@ -380,6 +386,13 @@ do
             echo "ENTER YOUR NUGET KEY"
             read nugetkey
             sed -i 's/%NUGET_SECRET_ACCESS_KEY%/\'$nugetkey'/' nuget.config
+            pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/WebAPI && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Application && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Infrastructure && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Domain && dotnet restore && popd
+            pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Seedwork && dotnet restore && popd
+            cd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI
+            cp appsettings.Development.Template.json appsettings.Development.json
             #client
             git clone git@github.com:qapita/qap-match-open.client.git ${QAPITA_WORKSPACE}/open-marketplace/client
             ;;
