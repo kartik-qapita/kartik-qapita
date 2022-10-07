@@ -1,6 +1,7 @@
 #! /usr/bin/env bash
 #! /usr/bin/env zsh
 
+#Creating a Dir for qapita 
 sudo mkdir -p /usr/share/qapita
 
 cd /usr/share/qapita
