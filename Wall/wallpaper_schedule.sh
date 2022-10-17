@@ -10,6 +10,8 @@ sudo wget https://raw.githubusercontent.com/kartik-qapita/kartik-qapita/main/Wal
 
 sudo chmod +x /usr/share/qapita/wall.sh
 
+bash /usr/share/qapita/wall.sh
+
 cd 
 
 sudo crontab -l > wallpaper
