@@ -50,7 +50,7 @@ else
 fi
 
 # create folders for storing files required for setting up QapMap
-mkdir -p ~/machine-setup/{certificates,eventstore,qmap-setup,mongodb} ~/local/.bin
+mkdir -p ~/machine-setup/{certificates,eventstoredb,mongodb} ~/local/.bin
 
 # We need AWS CLI for copying files from our AWS S3 bucket
 # Install AWS CLI
@@ -94,9 +94,10 @@ fi
 # https://www.youtube.com/watch?v=FOK5BPy30HQ
 
 # copy files from qapita-development s3 bucket to ~/machine-setup
-aws s3 cp s3://qapita-dev-development/certificates ~/machine-setup/certificates --recursive
-aws s3 cp s3://qapita-dev-development/EventStore/v21.10.5/ ~/machine-setup/eventstore --recursive
-aws s3 cp s3://qapita-dev-development/mongodb ~/machine-setup/mongodb --recursive
+
+aws s3 cp s3://qapita-dev-development/machine-setup/certificates ~/machine-setup/certificates --recursive
+aws s3 cp s3://qapita-dev-development/machine-setup/eventstoredb ~/machine-setup/eventstoredb --recursive
+aws s3 cp s3://qapita-dev-development/machine-setup/mongodb ~/machine-setup/mongodb --recursive
 
 export QAPITA_WORKSPACE=~/qapita-dev-workspace
 
@@ -151,7 +152,11 @@ sudo update-ca-certificates
 #    Authorities tab - select qapita-CA
 
 # Installing MongoDB
-# https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
+export pkgmongod = mongod
+dpkg -s $pkgmongod &> /dev/null
+
+if [ $? -ne 0 ] ;then
+echo "Installing MongoDB"
 wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
 
 # Note: this is specific to Ubuntu 20.04
@@ -172,11 +177,20 @@ sudo systemctl restart mongod
 # check the status of the mongodb service (confirm that it is running)
 sudo systemctl status mongod
 
-# check if /mongodb-data/db folder has files in it
-# if /mongodb-data/db folder is empty, then something went wrong
-sudo dpkg -i ~/machine-setup/eventstore/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
-sudo -u eventstore -g eventstore cp ~/machine-setup/eventstore/eventstore.conf /etc/eventstore
-sudo -u eventstore -g eventstore cp ~/machine-setup/eventstore/eventstore.pfx /etc/eventstore
+else
+    echo    "Skipping installation, MongoDB was already installed"
+fi
+
+export pkgeventstore = eventstore
+dpkg -s $pkgeventstore &> /dev/null
+
+if [ $? -ne 0 ] ;then
+echo "Installing EventstoreDB"
+
+
+sudo dpkg -i ~/machine-setup/eventstoredb/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
+sudo -u eventstore -g eventstore cp ~/machine-setup/eventstoredb/eventstore.conf /etc/eventstore
+sudo -u eventstore -g eventstore cp ~/machine-setup/eventstoredb/eventstore.pfx /etc/eventstore
 
 sudo mkdir -p /eventstoredb-data/{db,log}
 sudo chown -R eventstore:eventstore /eventstoredb-data
@@ -186,8 +200,19 @@ sudo systemctl start eventstore
 # to check if eventstore is working fine
 sudo systemctl status eventstore
 
+else
+    echo    "Skipping installation, EventstoreDB was already installed"
+fi
+
 # the folder /eventstoredb-data/db should have the eventstore data
 #Installing docker
+
+export pkgdocker = docker
+dpkg -s $pkgdocker &> /dev/null
+
+if [ $? -ne 0 ] ;then
+echo "Installing Docker"
+
 sudo apt-get remove docker docker-engine docker.io containerd runc
 sudo apt-get update
 
@@ -207,7 +232,17 @@ sudo chmod +x /usr/local/bin/docker-compose
 # You will have to restart the computer for this to be effective
 sudo usermod -aG docker ${USER}
 
+else
+    echo    "Skipping installation, Docker was already installed"
+fi
+
 # Install .NET
+
+export pkgdotnet = dotnet
+dpkg -s $pkgdotnet &> /dev/null
+
+if [ $? -ne 0 ] ;then
+echo "Installing Dotnet 6"
 
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
@@ -215,7 +250,11 @@ sudo apt-get update
 sudo apt-get install -y dotnet-sdk-6.0
 
 # You should now be able to run the following command
-dotnet --version
+else
+    echo    "Skipping installation, Dotnet was already installed"
+    dotnet --version
+fi
+
 # if the above command fails, it means dotnet core is not installed
 
 # Install nvm
@@ -254,6 +293,12 @@ sudo docker container start q-seq-node
 sudo docker container update --restart always q-seq-node
 
 # Installing NGINX 1.20.2
+export pkgnginx = nginx
+dpkg -s $pkgnginx &> /dev/null
+
+if [ $? -ne 0 ] ;then
+echo "Installing Nginx"
+
 (cat << EOF
 deb https://nginx.org/packages/ubuntu/ $(lsb_release -cs) nginx
 deb-src https://nginx.org/packages/ubuntu/ $(lsb_release -cs) nginx
@@ -299,6 +344,28 @@ sudo chmod 600 /etc/ssl/private/qapitacorp.local.key
 # restart nginx so that our changes are reflected
 sudo systemctl restart nginx
 
+else
+    echo    "Skipping installation, Nginx was already installed"
+fi
+
+# Creating SWAP Memory
+printf '(Optional) - Do you wish to create SWAP Memory (y/n)? '
+read createswap
+
+if [ "$createswap" != "${createswap#[Yy]}" ] ;then
+
+    echo Creating swapfile
+    echo "Enter the size of swap needed (eg. 16 for 16GB of swap)"
+    read swap
+    sudo fallocate -l ${swap}G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo "/swapfile swap swap defaults 0 0" | sudo tee -a /etc/fstab
+
+else
+    echo "Swap Memory Creation Skipped"
+fi
 
 #Cloning Server & client
 export QAPITA_WORKSPACE=~/qapita-dev-workspace
@@ -416,4 +483,12 @@ done
 clear -x
 
 echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, Node, SEQ"
+
+echo "                 ___      _    ____ ___ _____  _    
+                      / _ \    / \  |  _ \_ _|_   _|/ \   
+                     | | | |  / _ \ | |_) | |  | | / _ \  
+                     | |_| | / ___ \|  __/| |  | |/ ___ \ 
+                      \__\_\/_/   \_\_|  |___| |_/_/   \_\
+                                                          
+"
 echo ">> 🎉 Machine-Setup 💻 Completed <<"
