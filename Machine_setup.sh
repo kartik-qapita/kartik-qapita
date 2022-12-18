@@ -151,36 +151,6 @@ sudo update-ca-certificates
 #    Manage Certificates
 #    Authorities tab - select qapita-CA
 
-# Installing MongoDB
-export pkgmongod = mongod
-dpkg -s $pkgmongod &> /dev/null
-
-if [ $? -ne 0 ] ;then
-echo "Installing MongoDB"
-wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-
-# Note: this is specific to Ubuntu 20.04
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-
-sudo apt-get update
-sudo apt-get install -y mongodb-org
-
-# edit /etc/mongod.conf
-sudo mkdir -p /mongodb-data/{db,log}
-sudo chown -R mongodb:mongodb /mongodb-data
-# replace the mongodb configuration file in /etc folder
-sudo cp ~/machine-setup/mongodb/mongod.conf /etc
-# make sure mongodb starts when the machine boots
-sudo systemctl enable mongod
-# restart now for the config changes to be effective
-sudo systemctl restart mongod
-# check the status of the mongodb service (confirm that it is running)
-sudo systemctl status mongod
-
-else
-    echo    "Skipping installation, MongoDB was already installed"
-fi
-
 export pkgeventstore = eventstore
 dpkg -s $pkgeventstore &> /dev/null
 
@@ -235,6 +205,48 @@ sudo usermod -aG docker ${USER}
 else
     echo    "Skipping installation, Docker was already installed"
 fi
+
+
+# Installing MongoDB
+
+# Installing mongodb based on os version
+export OSVERSION=$(lsb_release -rs)
+
+if [ $OSVERSION = "20.04" ]  ;then
+    echo "Installing MongoDB"
+    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+
+    # Note: this is specific to Ubuntu 20.04
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+
+    sudo apt-get update
+    sudo apt-get install -y mongodb-org
+
+    # edit /etc/mongod.conf
+    sudo mkdir -p /mongodb-data/{db,log}
+    sudo chown -R mongodb:mongodb /mongodb-data
+    # replace the mongodb configuration file in /etc folder
+    sudo cp ~/machine-setup/mongodb/mongod.conf /etc
+    # make sure mongodb starts when the machine boots
+    sudo systemctl enable mongod
+    # restart now for the config changes to be effective
+    sudo systemctl restart mongod
+    # check the status of the mongodb service (confirm that it is running)
+    sudo systemctl status mongod
+
+elif [ $OSVERSION = "22.04" ] ; then
+    echo "Installing MongoDB in Docker"
+    # edit /etc/mongod.conf
+    sudo mkdir -p /mongodb-data/{db,log}
+    sudo chown -R mongodb:mongodb /mongodb-data
+    # replace the mongodb configuration file in /etc folder
+    sudo cp ~/machine-setup/mongodb/mongod.conf /etc
+    # Run docker image
+    docker run --name mongodb -p 27017:27017 -d -v /mongodb-data/db:/data/db mongo:6.0.3
+else
+    echo    "Skipping installation, MongoDB was already installed"
+fi
+
 
 # Install .NET
 
@@ -484,11 +496,14 @@ clear -x
 
 echo "Installed - AWS-cli , Git, Eventstore, Mongodb, Docker, Nginx, Dotnet, Node, SEQ"
 
-echo "                 ___      _    ____ ___ _____  _    
+echo '
+
+                       ___      _    ____ ___ _____  _    
                       / _ \    / \  |  _ \_ _|_   _|/ \   
                      | | | |  / _ \ | |_) | |  | | / _ \  
                      | |_| | / ___ \|  __/| |  | |/ ___ \ 
                       \__\_\/_/   \_\_|  |___| |_/_/   \_\
                                                           
-"
+                                                          
+'
 echo ">> 🎉 Machine-Setup 💻 Completed <<"
