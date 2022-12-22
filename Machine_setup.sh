@@ -151,10 +151,10 @@ sudo update-ca-certificates
 #    Manage Certificates
 #    Authorities tab - select qapita-CA
 
-export pkgeventstore=eventstore
-dpkg -s $pkgeventstore &> /dev/null
+# export pkgeventstore=eventstore
+# dpkg -s $pkgeventstore &> /dev/null
 
-if [ $? -ne 0 ] ;then
+# if [ $? -ne 0 ] ;then
 echo "Installing EventstoreDB"
 
 sudo dpkg -i ~/machine-setup/eventstoredb/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
@@ -169,17 +169,17 @@ sudo systemctl start eventstore
 # to check if eventstore is working fine
 sudo systemctl status eventstore
 
-else
-    echo    "Skipping installation, EventstoreDB was already installed"
-fi
+# else
+#     echo    "Skipping installation, EventstoreDB was already installed"
+# fi
 
 # the folder /eventstoredb-data/db should have the eventstore data
 #Installing docker
 
-export pkgdocker=docker
-dpkg -s $pkgdocker &> /dev/null
+# export pkgdocker=docker
+# dpkg -s $pkgdocker &> /dev/null
 
-if [ $? -ne 0 ] ;then
+# if [ $? -ne 0 ] ;then
 echo "Installing Docker"
 
 sudo apt-get remove docker docker-engine docker.io containerd runc
@@ -201,9 +201,9 @@ sudo chmod +x /usr/local/bin/docker-compose
 # You will have to restart the computer for this to be effective
 sudo usermod -aG docker ${USER}
 
-else
-    echo    "Skipping installation, Docker was already installed"
-fi
+# else
+#     echo    "Skipping installation, Docker was already installed"
+# fi
 
 
 # Installing MongoDB
@@ -249,10 +249,10 @@ fi
 
 # Install .NET
 
-export pkgdotnet=dotnet
-dpkg -s $pkgdotnet &> /dev/null
+# export pkgdotnet=dotnet
+# dpkg -s $pkgdotnet &> /dev/null
 
-if [ $? -ne 0 ] ;then
+# if [ $? -ne 0 ] ;then
 echo "Installing Dotnet 6"
 
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
@@ -261,10 +261,10 @@ sudo apt-get update
 sudo apt-get install -y dotnet-sdk-6.0
 
 # You should now be able to run the following command
-else
-    echo    "Skipping installation, Dotnet was already installed"
-    dotnet --version
-fi
+# else
+#     echo    "Skipping installation, Dotnet was already installed"
+#     dotnet --version
+# fi
 
 # if the above command fails, it means dotnet core is not installed
 
@@ -305,10 +305,10 @@ sudo docker container start q-seq-node
 sudo docker container update --restart always q-seq-node
 
 # Installing NGINX 1.20.2
-export pkgnginx=nginx
-dpkg -s $pkgnginx &> /dev/null
+# export pkgnginx=nginx
+# dpkg -s $pkgnginx &> /dev/null
 
-if [ $? -ne 0 ] ;then
+# if [ $? -ne 0 ] ;then
 echo "Installing Nginx"
 
 (cat << EOF
@@ -356,9 +356,9 @@ sudo chmod 600 /etc/ssl/private/qapitacorp.local.key
 # restart nginx so that our changes are reflected
 sudo systemctl restart nginx
 
-else
-    echo    "Skipping installation, Nginx was already installed"
-fi
+# else
+#     echo    "Skipping installation, Nginx was already installed"
+# fi
 
 # Creating SWAP Memory
 printf '(Optional) - Do you wish to create SWAP Memory (y/n)? '
