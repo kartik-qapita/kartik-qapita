@@ -151,12 +151,11 @@ sudo update-ca-certificates
 #    Manage Certificates
 #    Authorities tab - select qapita-CA
 
-export pkgeventstore = eventstore
+export pkgeventstore=eventstore
 dpkg -s $pkgeventstore &> /dev/null
 
 if [ $? -ne 0 ] ;then
 echo "Installing EventstoreDB"
-
 
 sudo dpkg -i ~/machine-setup/eventstoredb/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
 sudo -u eventstore -g eventstore cp ~/machine-setup/eventstoredb/eventstore.conf /etc/eventstore
@@ -177,7 +176,7 @@ fi
 # the folder /eventstoredb-data/db should have the eventstore data
 #Installing docker
 
-export pkgdocker = docker
+export pkgdocker=docker
 dpkg -s $pkgdocker &> /dev/null
 
 if [ $? -ne 0 ] ;then
@@ -250,7 +249,7 @@ fi
 
 # Install .NET
 
-export pkgdotnet = dotnet
+export pkgdotnet=dotnet
 dpkg -s $pkgdotnet &> /dev/null
 
 if [ $? -ne 0 ] ;then
@@ -306,7 +305,7 @@ sudo docker container start q-seq-node
 sudo docker container update --restart always q-seq-node
 
 # Installing NGINX 1.20.2
-export pkgnginx = nginx
+export pkgnginx=nginx
 dpkg -s $pkgnginx &> /dev/null
 
 if [ $? -ne 0 ] ;then
