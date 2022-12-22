@@ -151,10 +151,10 @@ sudo update-ca-certificates
 #    Manage Certificates
 #    Authorities tab - select qapita-CA
 
-# export pkgeventstore=eventstore
-# dpkg -s $pkgeventstore &> /dev/null
+export pkgeventstore=eventstore
+dpkg -s $pkgeventstore &> /dev/null
 
-# if [ $? -ne 0 ] ;then
+if [ $? -ne 0 ] ;then
 echo "Installing EventstoreDB"
 
 sudo dpkg -i ~/machine-setup/eventstoredb/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
@@ -169,41 +169,48 @@ sudo systemctl start eventstore
 # to check if eventstore is working fine
 sudo systemctl status eventstore
 
-# else
-#     echo    "Skipping installation, EventstoreDB was already installed"
-# fi
+else
+    echo    "Skipping installation, EventstoreDB was already installed"
+fi
 
 # the folder /eventstoredb-data/db should have the eventstore data
 #Installing docker
 
-# export pkgdocker=docker
-# dpkg -s $pkgdocker &> /dev/null
+export pkgdocker=docker
+dpkg -s $pkgdocker &> /dev/null
 
-# if [ $? -ne 0 ] ;then
+if [ $? -ne 0 ] ;then
 echo "Installing Docker"
 
 sudo apt-get remove docker docker-engine docker.io containerd runc
 sudo apt-get update
-
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo apt-key fingerprint 0EBFCD88
-sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-
+sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# sudo apt-get update
+# sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+# sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+# sudo chmod +x /usr/local/bin/docker-compose
 
 # add current user to the docker group, this will allow you to run docker command without sudo
 # You will have to restart the computer for this to be effective
 sudo usermod -aG docker ${USER}
 
-# else
-#     echo    "Skipping installation, Docker was already installed"
-# fi
+else
+    echo    "Skipping installation, Docker was already installed"
+fi
 
 
 # Installing MongoDB
@@ -213,11 +220,18 @@ export OSVERSION=$(lsb_release -rs)
 
 if [ $OSVERSION = "20.04" ]  ;then
     echo "Installing MongoDB"
+    # wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+
+    # # Note: this is specific to Ubuntu 20.04
+    # echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+
+    # sudo apt-get update
+    # sudo apt-get install -y mongodb-org
+
     wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-
-    # Note: this is specific to Ubuntu 20.04
+    sudo apt-get install gnupg
+    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-
     sudo apt-get update
     sudo apt-get install -y mongodb-org
 
@@ -249,10 +263,10 @@ fi
 
 # Install .NET
 
-# export pkgdotnet=dotnet
-# dpkg -s $pkgdotnet &> /dev/null
+export pkgdotnet=dotnet
+dpkg -s $pkgdotnet &> /dev/null
 
-# if [ $? -ne 0 ] ;then
+if [ $? -ne 0 ] ;then
 echo "Installing Dotnet 6"
 
 wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
@@ -261,10 +275,10 @@ sudo apt-get update
 sudo apt-get install -y dotnet-sdk-6.0
 
 # You should now be able to run the following command
-# else
-#     echo    "Skipping installation, Dotnet was already installed"
-#     dotnet --version
-# fi
+else
+    echo    "Skipping installation, Dotnet was already installed"
+    dotnet --version
+fi
 
 # if the above command fails, it means dotnet core is not installed
 
@@ -305,10 +319,10 @@ sudo docker container start q-seq-node
 sudo docker container update --restart always q-seq-node
 
 # Installing NGINX 1.20.2
-# export pkgnginx=nginx
-# dpkg -s $pkgnginx &> /dev/null
+export pkgnginx=nginx
+dpkg -s $pkgnginx &> /dev/null
 
-# if [ $? -ne 0 ] ;then
+if [ $? -ne 0 ] ;then
 echo "Installing Nginx"
 
 (cat << EOF
@@ -356,9 +370,9 @@ sudo chmod 600 /etc/ssl/private/qapitacorp.local.key
 # restart nginx so that our changes are reflected
 sudo systemctl restart nginx
 
-# else
-#     echo    "Skipping installation, Nginx was already installed"
-# fi
+else
+    echo    "Skipping installation, Nginx was already installed"
+fi
 
 # Creating SWAP Memory
 printf '(Optional) - Do you wish to create SWAP Memory (y/n)? '
