@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 echo "QAPITA : 💻 MACHINE-SETUP"
 
+set -euo pipefail
+
 # some basic software
 sudo apt install -y \
     openssh-server tmux git \
@@ -10,6 +12,12 @@ sudo apt install -y \
     curl wget \
     gnupg-agent \
     software-properties-common
+
+sudo apt-get update && \
+	sudo apt-get install -y curl wget tmux git groff less build-essential ca-certificates unzip lsb-release net-tools traceroute nmap tcpdump vim neovim telnet gnupg iputils-ping dnsutils gnupg2 postgresql-client
+
+# Install required packages
+sudo apt-get update && sudo apt-get install -y groff less
 
 echo "ssh key"
 if [ -d ~/.ssh ]
@@ -22,7 +30,7 @@ fi
 
 #Installing VS Code
 printf 'Do you wish to install VS Code (y/n)? '
-read installcode
+read -r installcode
 
 if [ "$installcode" != "${installcode#[Yy]}" ] ;then
   sudo apt-get install wget gpg
@@ -38,7 +46,7 @@ fi
 
 #Installing Microsoft Teams
 printf 'Do you wish to install Microsoft Teams (y/n)? '
-read installteams
+read -r installteams
 
 if [ "$installteams" != "${installteams#[Yy]}" ] ;then
   curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -52,35 +60,35 @@ fi
 # create folders for storing files required for setting up QapMap
 mkdir -p ~/machine-setup/{certificates,eventstoredb,mongodb} ~/local/.bin
 
-# We need AWS CLI for copying files from our AWS S3 bucket
-# Install AWS CLI
-sudo apt-get install -y groff less
-cd ~/machine-setup
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
+# Check if AWS CLI is already installed
+if ! command -v aws &> /dev/null; then
+    echo "AWS CLI is not installed. Installing..."
+    
+    # Download and install AWS CLI
+    cd ~/machine-setup || exit
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    sudo ./aws/install
+    
+    echo "AWS CLI has been installed."
+else
+    echo "AWS CLI is already installed."
+fi
 
 clear -x
 
 #Configuring AWS_CREDENTIALS
 
 echo "Enter You AWS Profile Name : (eg. qapita-yourname)"
-read awsprofileconfigure
+read -r awsprofileconfigure
 
 aws configure sso
-#echo "Enter YOUR ACCESS & SECRET KEY"
-#aws configure --profile $awsprofileconfigure
-# Make sure your AWS_PROFILE environment variable is setup
-#sleep 3
-# and your AWS credentials are configured in ~/.aws folder
 export AWS_PROFILE=$awsprofileconfigure
 export AWS_REGION=ap-south-1
-#echo "AWS Profile Configured"
-#to confirm that aws is configured
 aws s3 ls
 
 printf 'Are the AWS S3 Buckets Listed above (y/n)? '
-read awss3
+read -r awss3
 
 if [ "$awss3" != "${awss3#[Yy]}" ] ;then
     echo "AWS Profile is configured"
@@ -88,10 +96,6 @@ else
     echo "AWS Profile Configuration not completed, please check the AWS SSO Configuration Guide"
     exit
 fi
-
-# Configure your AWS environment (you should get the credentials if you don't already have one)
-# the following YouTube video will help you with instructions for configuring the AWS environment
-# https://www.youtube.com/watch?v=FOK5BPy30HQ
 
 # copy files from qapita-development s3 bucket to ~/machine-setup
 
@@ -111,28 +115,18 @@ export PATH=~/.local/bin:\$PATH
 export QAPITA_WORKSPACE=${QAPITA_WORKSPACE}
 EOF
 
-# mkdir -p ~/.ssh
-
-cat << EOF >> ~/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCM71oLD28cZBv7bF1hy0VdzktED1BpPqWoRNVxm2eu+GysBwIRSrCjH/iVNvnkQTYex89VounL/XFMazCN2Wy3RxgpScKoIY+hic8o3iGt+3ms9kl8SwQNd17TovLoVPa42jWsCAM+EMGliiWxab5IkxSpQk6yGhRY0D/svaqyuRk0O+m0ry8uMHaQRX8q0gHEpm3nzNxlX7adFMUnz9fPigWLAP0FK+J9rAeWNoetbpVIQVPN7sMeuqPY/93qnJhQ9mPSOpxJRMVOQTMk2BPXuZu9MUc6O1XFf76rKafRCW99AekQDQHcwwdd3plE8Gr+NwcsnSFN0n7BYl5QjQnV
-EOF
-
-chmod 600 ~/.ssh/authorized_keys
-
 echo set completion-ignore-case on | sudo tee -a /etc/inputrc
-
 clear -x
 
 # Configuring Git
 echo "Enter Your Git-Hub Username"
-read githubusername
-git config --global user.name $githubusername
+read -r githubusername
+git config --global user.name "$githubusername"
 
 sleep 3
 echo "Enter Your Qapita Email Id"
-read qapitaemail
-git config --global user.email $qapitaemail
-
+read -r qapitaemail
+git config --global user.email "$qapitaemail"
 
 
 # this is required for dotnet run or webpack to watch changes to files
@@ -151,139 +145,175 @@ sudo update-ca-certificates
 #    Manage Certificates
 #    Authorities tab - select qapita-CA
 
-export pkgeventstore=eventstore
-dpkg -s $pkgeventstore &> /dev/null
+EVENTSTORE_PACKAGE="EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb"
+EVENTSTORE_INSTALL_PATH="$HOME/machine-setup/eventstoredb"
+EVENTSTORE_CONFIG_PATH="/etc/eventstore"
+EVENTSTORE_DATA_PATH="/eventstoredb-data"
+EVENTSTORE_USER="eventstore"
+EVENTSTORE_GROUP="eventstore"
 
-if [ $? -ne 0 ] ;then
-echo "Installing EventstoreDB"
+check_installation() {
+    if ! dpkg -s eventstore > /dev/null 2>&1; then
+        install_eventstore
+    else
+        echo "EventStore is already installed."
+    fi
+}
 
-sudo dpkg -i ~/machine-setup/eventstoredb/EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb
-sudo -u eventstore -g eventstore cp ~/machine-setup/eventstoredb/eventstore.conf /etc/eventstore
-sudo -u eventstore -g eventstore cp ~/machine-setup/eventstoredb/eventstore.pfx /etc/eventstore
+install_eventstore() {
+    echo "Installing EventStore..."
+    sudo dpkg -i "$EVENTSTORE_INSTALL_PATH/$EVENTSTORE_PACKAGE"
 
-sudo mkdir -p /eventstoredb-data/{db,log}
-sudo chown -R eventstore:eventstore /eventstoredb-data
+    echo "Configuring EventStore..."
+    sudo -u "$EVENTSTORE_USER" -g "$EVENTSTORE_GROUP" cp "$EVENTSTORE_INSTALL_PATH/eventstore.conf" "$EVENTSTORE_CONFIG_PATH"
+    sudo -u "$EVENTSTORE_USER" -g "$EVENTSTORE_GROUP" cp "$EVENTSTORE_INSTALL_PATH/eventstore.pfx" "$EVENTSTORE_CONFIG_PATH"
 
-sudo systemctl enable eventstore
-sudo systemctl start eventstore
-# to check if eventstore is working fine
-sudo systemctl status eventstore
+    echo "Creating data directories..."
+    sudo mkdir -p "$EVENTSTORE_DATA_PATH/{db,log}"
+    sudo chown -R "$EVENTSTORE_USER:$EVENTSTORE_GROUP" "$EVENTSTORE_DATA_PATH"
 
-else
-    echo    "Skipping installation, EventstoreDB was already installed"
-fi
+    echo "Enabling and starting EventStore service..."
+    sudo systemctl enable eventstore
+    sudo systemctl start eventstore
 
+    echo "EventStore installation and configuration completed."
+}
+
+check_installation
 # the folder /eventstoredb-data/db should have the eventstore data
+
 #Installing docker
 
-export pkgdocker=docker
-dpkg -s $pkgdocker &> /dev/null
+# Check if Docker is already installed
+if ! command -v docker &> /dev/null; then
+    echo "Docker is not installed. Proceeding with installation..."
 
-if [ $? -ne 0 ] ;then
-echo "Installing Docker"
+    # Update package information and install required tools
+    sudo apt-get update
+    sudo apt-get install -y --no-install-recommends ca-certificates curl gnupg
 
-sudo apt-get remove docker docker-engine docker.io containerd runc
-sudo apt-get update
-sudo apt-get install \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-sudo apt-get update
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    # Download and add Docker GPG key
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# sudo apt-get update
-# sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-# sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-# sudo chmod +x /usr/local/bin/docker-compose
+    # Update and install Docker packages
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-# add current user to the docker group, this will allow you to run docker command without sudo
-# You will have to restart the computer for this to be effective
-sudo usermod -aG docker ${USER}
+    # Add user to the docker group
+    sudo usermod -aG docker "$USER"
+
+    echo "Docker installation completed. Please log out and log back in for group membership to take effect."
+
+    # Configure Docker to start on boot with systemd
+    sudo systemctl enable docker.service
+    sudo systemctl enable containerd.service
+
+    echo "Docker has been configured to start on boot with systemd."
 
 else
-    echo    "Skipping installation, Docker was already installed"
+    echo "Docker is already installed."
 fi
 
-
 # Installing MongoDB
+# Function to install MongoDB
+install_mongodb() {
+    # Install prerequisites
+    sudo apt-get update
+    sudo apt-get install -y gnupg curl
 
-# Installing mongodb based on os version
-export OSVERSION=$(lsb_release -rs)
+    # Import MongoDB GPG key
+    curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
 
-if [ $OSVERSION = "20.04" ]  ;then
-    echo "Installing MongoDB"
-    # wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+    # Add MongoDB repository to sources list
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $VERSION_CODENAME/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 
-    # # Note: this is specific to Ubuntu 20.04
-    # echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-
-    # sudo apt-get update
-    # sudo apt-get install -y mongodb-org
-
-    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-    sudo apt-get install gnupg
-    wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+    # Install MongoDB
     sudo apt-get update
     sudo apt-get install -y mongodb-org
 
-    # edit /etc/mongod.conf
+    # Create data and log directories
     sudo mkdir -p /mongodb-data/{db,log}
     sudo chown -R mongodb:mongodb /mongodb-data
-    # replace the mongodb configuration file in /etc folder
+
+    # Replace MongoDB configuration file
     sudo cp ~/machine-setup/mongodb/mongod.conf /etc
-    # make sure mongodb starts when the machine boots
-    sudo systemctl enable mongod
-    # restart now for the config changes to be effective
-    sudo systemctl restart mongod
-    # check the status of the mongodb service (confirm that it is running)
+
+    # Start MongoDB service
+    sudo systemctl start mongod
     sudo systemctl status mongod
 
-elif [ $OSVERSION = "22.04" ] ; then
-    echo "Installing MongoDB in Docker"
-    # edit /etc/mongod.conf
-    sudo mkdir -p /mongodb-data/{db,log}
-    sudo chown -R mongodb:mongodb /mongodb-data
-    # replace the mongodb configuration file in /etc folder
-    sudo cp ~/machine-setup/mongodb/mongod.conf /etc
-    # Run docker image
-    docker run --name mongodb -p 27017:27017 -d -v /mongodb-data/db:/data/db mongo:6.0.3
+    # Enable MongoDB to start on system reboot
+    sudo systemctl enable mongod
+
+    echo "MongoDB installation completed."
+}
+
+# Check if MongoDB is already installed
+if dpkg -l | grep -q "mongodb-org"; then
+    echo "MongoDB is already installed."
 else
-    echo    "Skipping installation, MongoDB was already installed"
+    # Check OS release version
+    source /etc/os-release
+
+    if [[ "$ID" == "ubuntu" ]]; then
+        if [[ "$VERSION_ID" == "22.04" || "$VERSION_ID" == "20.04" ]]; then
+            echo "Supported Ubuntu version: $VERSION_ID"
+            install_mongodb
+        else
+            echo "Unsupported Ubuntu version: $VERSION_ID. Only Ubuntu 20.04 LTS and 22.04 LTS are supported."
+        fi
+    else
+        echo "This script is designed for Ubuntu only."
+    fi
 fi
 
 
 # Install .NET
+# Function to install dotnet on Ubuntu 22.04 LTS
+install_dotnet_2204() {
+    sudo apt-get update && \
+    sudo apt-get install -y dotnet-sdk-7.0
 
-export pkgdotnet=dotnet
-dpkg -s $pkgdotnet &> /dev/null
+    sudo apt-get update && \
+    sudo apt-get install -y aspnetcore-runtime-7.0
+}
 
-if [ $? -ne 0 ] ;then
-echo "Installing Dotnet 6"
+# Function to install dotnet on Ubuntu 20.04 LTS
+install_dotnet_2004() {
+    wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    sudo dpkg -i packages-microsoft-prod.deb
 
-wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-sudo dpkg -i packages-microsoft-prod.deb
-sudo apt-get update
-sudo apt-get install -y dotnet-sdk-6.0
+    sudo apt-get update && \
+    sudo apt-get install -y dotnet-sdk-7.0
 
-# You should now be able to run the following command
+    sudo apt-get update && \
+    sudo apt-get install -y aspnetcore-runtime-7.0
+}
+
+# Check OS release version
+source /etc/os-release
+
+if [[ "$ID" == "ubuntu" ]]; then
+    case "$VERSION_CODENAME" in
+        "jammy") # Ubuntu 22.04 LTS
+            install_dotnet_2204
+            ;;
+        "focal") # Ubuntu 20.04 LTS
+            install_dotnet_2004
+            ;;
+        *)
+            echo "Unsupported Ubuntu version."
+            exit 1
+            ;;
+    esac
 else
-    echo    "Skipping installation, Dotnet was already installed"
-    dotnet --version
+    echo "This script is intended for Ubuntu only."
+    exit 1
 fi
 
-# if the above command fails, it means dotnet core is not installed
-
 # Install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
 
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
@@ -318,28 +348,42 @@ sudo docker container create -p 5341:5341 -p 8081:80 \
 sudo docker container start q-seq-node
 sudo docker container update --restart always q-seq-node
 
-# Installing NGINX 1.20.2
-export pkgnginx=nginx
-dpkg -s $pkgnginx &> /dev/null
+# Installing NGINX 
 
-if [ $? -ne 0 ] ;then
-echo "Installing Nginx"
+# Check if NGINX is already installed
+if [ -x "$(command -v nginx)" ]; then
+    echo "NGINX is already installed."
+    exit 0
+fi
 
-(cat << EOF
-deb https://nginx.org/packages/ubuntu/ $(lsb_release -cs) nginx
-deb-src https://nginx.org/packages/ubuntu/ $(lsb_release -cs) nginx
-EOF
-) | sudo tee /etc/apt/sources.list.d/nginx.list
-echo
-sudo apt-get update
-echo
-export key=ABF5BD827BD9BF62
-echo
-# If key error, copy the key to environment variable "key" and run the below command ABF5BD827BD9BF62
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys $key
-sudo apt-get update
-sudo apt-get remove -y nginx
+# Install prerequisites
+sudo apt update
+sudo apt install -y curl gnupg2 ca-certificates lsb-release ubuntu-keyring
+
+# Import the official NGINX signing key
+curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+
+# Verify the key fingerprint
+expected_fingerprint="573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62"
+actual_fingerprint=$(gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg | grep -oP '(?<=\[\w\]\s+)\w+')
+if [ "$actual_fingerprint" != "$expected_fingerprint" ]; then
+    echo "Key fingerprint does not match. Removing the keyring file."
+    sudo rm /usr/share/keyrings/nginx-archive-keyring.gpg
+    exit 1
+fi
+
+# Set up the apt repository
+release_codename=$(lsb_release -cs)
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/stable/ubuntu $release_codename nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
+
+# Set up repository pinning
+echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" | sudo tee /etc/apt/preferences.d/99nginx
+
+# Install NGINX
+sudo apt update
 sudo apt install -y nginx
+
+echo "NGINX has been installed successfully."
 
 # /etc/hosts
 # we need to add a few lines in /etc/hosts
@@ -370,25 +414,24 @@ sudo chmod 600 /etc/ssl/private/qapitacorp.local.key
 # restart nginx so that our changes are reflected
 sudo systemctl restart nginx
 
-else
-    echo    "Skipping installation, Nginx was already installed"
-fi
-
 # Creating SWAP Memory
-printf '(Optional) - Do you wish to create SWAP Memory (y/n)? '
-read createswap
+# Function to create swap memory
+create_swap_memory() {
+    echo "Creating swapfile"
+    read -rp "Enter the size of swap needed (e.g., 16 for 16GB of swap): " swap_size
 
-if [ "$createswap" != "${createswap#[Yy]}" ] ;then
-
-    echo Creating swapfile
-    echo "Enter the size of swap needed (eg. 16 for 16GB of swap)"
-    read swap
-    sudo fallocate -l ${swap}G /swapfile
+    sudo fallocate -l "${swap_size}G" /swapfile
     sudo chmod 600 /swapfile
     sudo mkswap /swapfile
     sudo swapon /swapfile
     echo "/swapfile swap swap defaults 0 0" | sudo tee -a /etc/fstab
+}
 
+# Main script
+read -rp "(Optional) - Do you wish to create SWAP Memory? (y/n): " createswap
+
+if [[ $createswap =~ ^[Yy]$ ]]; then
+    create_swap_memory
 else
     echo "Swap Memory Creation Skipped"
 fi
