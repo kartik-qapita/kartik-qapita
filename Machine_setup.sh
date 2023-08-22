@@ -145,41 +145,41 @@ sudo update-ca-certificates
 #    Manage Certificates
 #    Authorities tab - select qapita-CA
 
-EVENTSTORE_PACKAGE="EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb"
-EVENTSTORE_INSTALL_PATH="$HOME/machine-setup/eventstoredb"
-EVENTSTORE_CONFIG_PATH="/etc/eventstore"
-EVENTSTORE_DATA_PATH="/eventstoredb-data"
-EVENTSTORE_USER="eventstore"
-EVENTSTORE_GROUP="eventstore"
+# EVENTSTORE_PACKAGE="EventStore-Commercial-Linux-v21.10.5.ubuntu-20.04.deb"
+# EVENTSTORE_INSTALL_PATH="$HOME/machine-setup/eventstoredb"
+# EVENTSTORE_CONFIG_PATH="/etc/eventstore"
+# EVENTSTORE_DATA_PATH="/eventstoredb-data"
+# EVENTSTORE_USER="eventstore"
+# EVENTSTORE_GROUP="eventstore"
 
-check_installation() {
-    if ! dpkg -s eventstore > /dev/null 2>&1; then
-        install_eventstore
-    else
-        echo "EventStore is already installed."
-    fi
-}
+# check_installation() {
+#     if ! dpkg -s eventstore > /dev/null 2>&1; then
+#         install_eventstore
+#     else
+#         echo "EventStore is already installed."
+#     fi
+# }
 
-install_eventstore() {
-    echo "Installing EventStore..."
-    sudo dpkg -i "$EVENTSTORE_INSTALL_PATH/$EVENTSTORE_PACKAGE"
+# install_eventstore() {
+#     echo "Installing EventStore..."
+#     sudo dpkg -i "$EVENTSTORE_INSTALL_PATH/$EVENTSTORE_PACKAGE"
 
-    echo "Configuring EventStore..."
-    sudo -u "$EVENTSTORE_USER" -g "$EVENTSTORE_GROUP" cp "$EVENTSTORE_INSTALL_PATH/eventstore.conf" "$EVENTSTORE_CONFIG_PATH"
-    sudo -u "$EVENTSTORE_USER" -g "$EVENTSTORE_GROUP" cp "$EVENTSTORE_INSTALL_PATH/eventstore.pfx" "$EVENTSTORE_CONFIG_PATH"
+#     echo "Configuring EventStore..."
+#     sudo -u "$EVENTSTORE_USER" -g "$EVENTSTORE_GROUP" cp "$EVENTSTORE_INSTALL_PATH/eventstore.conf" "$EVENTSTORE_CONFIG_PATH"
+#     sudo -u "$EVENTSTORE_USER" -g "$EVENTSTORE_GROUP" cp "$EVENTSTORE_INSTALL_PATH/eventstore.pfx" "$EVENTSTORE_CONFIG_PATH"
 
-    echo "Creating data directories..."
-    sudo mkdir -p "$EVENTSTORE_DATA_PATH/{db,log}"
-    sudo chown -R "$EVENTSTORE_USER:$EVENTSTORE_GROUP" "$EVENTSTORE_DATA_PATH"
+#     echo "Creating data directories..."
+#     sudo mkdir -p "$EVENTSTORE_DATA_PATH/{db,log}"
+#     sudo chown -R "$EVENTSTORE_USER:$EVENTSTORE_GROUP" "$EVENTSTORE_DATA_PATH"
 
-    echo "Enabling and starting EventStore service..."
-    sudo systemctl enable eventstore
-    sudo systemctl start eventstore
+#     echo "Enabling and starting EventStore service..."
+#     sudo systemctl enable eventstore
+#     sudo systemctl start eventstore
 
-    echo "EventStore installation and configuration completed."
-}
+#     echo "EventStore installation and configuration completed."
+# }
 
-check_installation
+# check_installation
 # the folder /eventstoredb-data/db should have the eventstore data
 
 #Installing docker
