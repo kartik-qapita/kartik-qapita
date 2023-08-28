@@ -146,19 +146,6 @@ configure_aws_sso() {
     fi
 }
 
-install_microsoft_teams() {
-    if ! command -v teams &> /dev/null; then
-        log "Installing Microsoft Teams..."
-        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-        sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/ms-teams stable main" > /etc/apt/sources.list.d/teams.list'
-        install_package teams
-        
-        log "Microsoft Teams has been installed."
-    else
-        log "Microsoft Teams is already installed."
-    fi
-}
-
 # Function for checking and installing Node.js with NVM
 install_nodejs_with_nvm() {
     # Check if nvm is installed
@@ -193,12 +180,18 @@ install_nodejs_with_nvm() {
     fi
 
     log "Installing Node.js with nvm..."
-    NODE_LTS=$(nvm ls-remote --lts | tail -n 1 | awk 'BEGIN{FS=" "} {print $1}')
-    nvm install "$NODE_LTS"
-    nvm alias default "$NODE_LTS"
-    nvm use "$NODE_LTS"
 
-    npm install -g lerna typescript concurrently
+    if ! command -v node &>/dev/null; then
+        NODE_LTS=$(nvm ls-remote --lts | tail -n 1 | awk 'BEGIN{FS=" "} {print $1}')
+        nvm install "$NODE_LTS"
+        nvm alias default "$NODE_LTS"
+        nvm use "$NODE_LTS"
+        else
+        log "Node.js is already installed with nvm."
+    fi
+    if ! command -v npm &>/dev/null; then
+        npm install -g lerna typescript concurrently
+    fi
     log "Node.js has been successfully installed."
 }
 
@@ -491,14 +484,6 @@ sudo update-ca-certificates
 #chrome://settings/advanced
 #    Manage Certificates
 #    Authorities tab - select qapita-CA
-
-#Install Microsoft Teams
-read -rp "Do you want to install Microsoft Teams? (y/n): " install_microsoft_teams
-if [ "$install_microsoft_teams" = "y" ]; then
-    install_microsoft_teams
-else
-    log "Microsoft Teams Installation skipped."
-fi
 
 # Install Google Chrome
 if ! command -v google-chrome &>/dev/null; then
