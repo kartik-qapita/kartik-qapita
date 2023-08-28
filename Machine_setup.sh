@@ -9,7 +9,7 @@ LOG_FILE="/var/log/qapita_local_machine_setup_script.log" # Set the path for the
 log() {
     local message="$1"
     local level="${2:-INFO}"
-    echo -e "[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $message" | tee -a "$LOG_FILE"
+    echo -e "[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $message" | sudo tee -a "$LOG_FILE"
 }
 
 # Function for logging errors
