@@ -438,7 +438,7 @@ check_configure_ssh_key
 
 clear -x
 
-configure_github_credentials
+#configure_github_credentials
 
 if ! command -v aws &>/dev/null; then
     install_aws_cli
@@ -502,7 +502,7 @@ else
 fi
 
 # Install Node.js with NVM and required packages
-install_nodejs_with_nvm
+# install_nodejs_with_nvm
 
 # Install .NET if not already installed
 if ! command -v dotnet &>/dev/null; then
@@ -547,7 +547,7 @@ fi
 
 # Install postman
 if ! command -v postman &>/dev/null; then
-    install_package_from_url "https://dl-cli.pstmn.io/install/linux64.sh"
+    #install_package_from_url "https://dl-cli.pstmn.io/install/linux64.sh"
 else
     log "Postman is already installed."
 fi
