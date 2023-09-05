@@ -133,13 +133,6 @@ configure_aws_sso() {
 
         aws s3 ls
         aws sts get-caller-identity | jq
-
-        read -rp "Are the s3 bucket lists displayed? (y/n): " s3_bucket_list
-        if [ "$s3_bucket_list" = "y" ]; then
-            log "AWS SSO configuration has been completed."
-        else
-            log "AWS SSO configuration canceled."
-        fi
         echo "AWS SSO configuration has been completed."
     else
         echo "AWS access is required to proceed with AWS SSO configuration."
