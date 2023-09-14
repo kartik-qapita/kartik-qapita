@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euo pipefail
-
 echo "QAPITA : 💻 MACHINE-SETUP"
 LOG_FILE="/var/log/qapita_local_machine_setup_script.log" # Set the path for the log file
 
