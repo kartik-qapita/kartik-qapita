@@ -286,9 +286,9 @@ install_eventstore() {
     ubuntu_version="$(lsb_release -rs)"
 
     if [ "$ubuntu_version" = "20.04" ]; then
-        package_name="EventStore-Commercial-Linux-v22.10.2.ubuntu-20.04.deb"
+        package_name="EventStore-Commercial-Linux-v22.10.4.ubuntu-20.04.deb"
     elif [ "$ubuntu_version" = "22.04" ]; then
-        package_name="EventStore-Commercial-Linux-v22.10.2-preview1.ubuntu-22.04.deb"
+        package_name="EventStore-Commercial-Linux-v22.10.4.ubuntu-22.04.deb"
     else
         echo "Unsupported Ubuntu version: $ubuntu_version"
         return 1
@@ -536,13 +536,6 @@ else
     log "Mongo Compass is already installed."
 fi
 
-# Install postman
-if ! command -v postman &>/dev/null; then
-    #install_package_from_url "https://dl-cli.pstmn.io/install/linux64.sh"
-else
-    log "Postman is already installed."
-fi
-
 # Install PostgreSQL if not already installed
 if ! command -v psql &>/dev/null; then
     install_postgresql
@@ -603,116 +596,6 @@ fi
 
 #Cloning Server & client
 export QAPITA_WORKSPACE=~/qapita-workspace
-
-# PS3='Please select any option to clone project to your local: '
-# options=("QapMap" "QapMatch" "Liquidity" "Open-Marketplace" "QFund" "Quit")
-# select opt in "${options[@]}"
-# do
-#     case $opt in
-#         "QapMap")
-#             echo "Cloning the $opt Project Repos"
-#             # Clone the server repository and restore nuget packages
-#             git clone git@github.com:qapita/captable-writemodel.git ${QAPITA_WORKSPACE}/qmap/server
-#             cd ${QAPITA_WORKSPACE}/qmap/server/
-#             #Replace Default value with Generated Nuget Key in nuget.config
-#             echo "ENTER YOUR NUGET KEY"
-#             read -r nugetkey
-#             sed -i "s/%NUGET_SECRET_ACCESS_KEY%/'$nugetkey'/" nuget.config
-#             pushd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/qmap/server/src/IDP && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/qmap/server/src/WebConsole && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/qmap/server/src/Qapita.QMap.UserTaskManagement && dotnet restore && popd
-#             cd ${QAPITA_WORKSPACE}/qmap/server/src/IDP
-#             cp appsettings.Development.Template.json appsettings.Development.json
-#             dotnet run /seed
-#             cd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI
-#             cp appsettings.Development.template.json appsettings.Development.json
-#             cd ${QAPITA_WORKSPACE}/qmap/server/src/Qapita.QMap.UserTaskManagement
-#             cp appsettings.Development.Template.json appsettings.Development.json
-#             cd ${QAPITA_WORKSPACE}/qmap/server/src/WebConsole
-#             cp appsettings.Development.Template.json appsettings.Development.json
-#             #client
-#             git clone git@github.com:qapita/captable-web.git ${QAPITA_WORKSPACE}/qmap/client
-#             sudo apt install -y build-essential
-#             pushd ${QAPITA_WORKSPACE}/qmap/client && lerna bootstrap && popd
-#             pushd ${QAPITA_WORKSPACE}/qmap/client/packages/web
-#             npm rebuild node-sass
-#             echo "Installing yarn globally"
-#             npm install --global yarn
-#             echo "Your yarn version is"
-#             yarn --version
-#             echo "Changing Directory to client"
-#             cd ${QAPITA_WORKSPACE}/qmap/client
-#             echo "Removing node_modules..."
-#             yes | lerna clean
-#             echo "Removing node_modules inside client"
-#             rm -rf node_modules
-#             echo "Unlinking all symlinks"
-#             yarn unlink-all
-#             echo "Linking all symlinks"
-#             yarn link-all
-#             echo "Changing to web package"
-#             cd packages/web
-#             ;;
-#         "QapMatch")
-#             echo "Cloning the $opt Project Repos"
-#             git clone git@github.com:qapita/qmatch-org-liquidity-event.git ${QAPITA_WORKSPACE}/qapmatch/server
-#             cd ${QAPITA_WORKSPACE}/qapmatch/server/
-#             echo "ENTER YOUR NUGET KEY"
-#             read -r nugetkey
-#             sed -i "s/%NUGET_SECRET_ACCESS_KEY%/'$nugetkey'/" nuget.config
-#             pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/WebAPI && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/Application && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/Infrastructure && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/qapmatch/server/src/Domain && dotnet restore && popd
-#             cd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI
-#             cp appsettings.Development.Template.json appsettings.Development.json
-#             #client
-#             git clone git@github.com:qapita/qapmatch-client.git ${QAPITA_WORKSPACE}/qapmatch/client
-#             ;;
-#         "Liquidity")
-#             echo "Cloning the $opt Project Repos"
-#             git clone git@github.com:qapita/qap-liquidity-server.git ${QAPITA_WORKSPACE}/liquidity/server
-#             cd ${QAPITA_WORKSPACE}/liquidity/server/
-#             echo "ENTER YOUR NUGET KEY"
-#             read -r nugetkey
-#             sed -i "s/%NUGET_SECRET_ACCESS_KEY%/'$nugetkey'/" nuget.config
-#             #client
-#             git clone git@github.com:qapita/qap-liquidity-client.git ${QAPITA_WORKSPACE}/liquidity/client
-#             ;;
-#         "Open-Marketplace")
-#             echo "Cloning the $opt Project Repos"
-#             git clone git@github.com:qapita/qap-match-open.server.git ${QAPITA_WORKSPACE}/open-marketplace/server
-#             cd ${QAPITA_WORKSPACE}/open-marketplace/server/
-#             echo "ENTER YOUR NUGET KEY"
-#             read -r nugetkey
-#             sed -i "s/%NUGET_SECRET_ACCESS_KEY%/'$nugetkey'/" nuget.config
-#             pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/WebAPI && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Application && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Infrastructure && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Domain && dotnet restore && popd
-#             pushd ${QAPITA_WORKSPACE}/open-marketplace/server/src/Seedwork && dotnet restore && popd
-#             cd ${QAPITA_WORKSPACE}/qmap/server/src/WebAPI
-#             cp appsettings.Development.Template.json appsettings.Development.json
-#             #client
-#             git clone git@github.com:qapita/qap-match-open.client.git ${QAPITA_WORKSPACE}/open-marketplace/client
-#             ;;
-#         "QFund")
-#             echo "Cloning the $opt Project Repos"
-#             git clone git@github.com:qapita/qap-fund-mgmt-server.git ${QAPITA_WORKSPACE}/qfund/server
-#             cd ${QAPITA_WORKSPACE}/open-marketplace/server/
-#             echo "ENTER YOUR NUGET KEY"
-#             read -r nugetkey
-#             sed -i "s/%NUGET_SECRET_ACCESS_KEY%/'$nugetkey'/" nuget.config
-#             #client
-#             git clone git@github.com:qapita/qap-fund-mgmt-client.git ${QAPITA_WORKSPACE}/qfund/client
-#             ;;
-#         "Quit")
-#             break
-#             ;;
-#         *) echo "invalid option $REPLY";;
-#     esac
-# done
 
 clear -x
 
