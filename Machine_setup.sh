@@ -61,6 +61,20 @@ install_package_from_url() {
     rm -f "$download_path"
 }
 
+install_aws_cli() {
+    log "Downloading AWS CLI..."
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+    log "Unzipping AWS CLI..."
+    unzip awscliv2.zip
+
+    log "Installing AWS CLI..."
+    sudo ./aws/install
+
+    log "Cleaning up..."
+    rm -r awscliv2.zip aws
+}
+
 check_configure_ssh_key() {
     if [ ! -f ~/.ssh/id_rsa ]; then
         echo "No SSH key found. Let's configure one."
@@ -79,52 +93,44 @@ check_configure_ssh_key() {
 }
 
 configure_github_credentials() {
-    log "Configuring GitHub credentials..."
+    log "Configuring Git credentials..."
     existing_username=$(git config --global user.name)
     existing_email=$(git config --global user.email)
 
     if [[ -n "$existing_username" && -n "$existing_email" ]]; then
-        echo "GitHub credentials are already configured:"
-        echo "GitHub Username: $existing_username"
-        echo "GitHub Email: $existing_email"
+        echo "GitHub / Azure DevOps credentials are already configured:"
+        echo "GitHub / Azure DevOps Username: $existing_username"
+        echo "GitHub / Azure DevOps Email: $existing_email"
     else
-        read -rp "Enter your GitHub username: " github_username
-        read -rp "Enter your Qapita email address: " github_email
+        read -rp "Enter your GitHub / Azure DevOps username: " github_username
+        read -rp "Enter your Qapita / Azure DevOps email address: " github_email
 
-        echo "GitHub Username: $github_username"
-        echo "GitHub Email: $github_email"
+        echo "GitHub / Azure DevOps Username: $github_username"
+        echo "GitHub / Azure DevOps Email: $github_email"
 
         read -rp "Is this information correct? (y/n): " confirm
         if [[ $confirm =~ ^[Yy]$ ]]; then
             git config --global user.name "$github_username"
             git config --global user.email "$github_email"
-            log "GitHub credentials configured successfully."
+            log "GitHub / Azure DevOps credentials configured successfully."
         else
-            log "GitHub credentials configuration canceled."
+            log "GitHub / Azure DevOps credentials configuration canceled."
         fi
     fi
 }
 
-install_aws_cli() {
-    log "Downloading AWS CLI..."
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-    log "Unzipping AWS CLI..."
-    unzip awscliv2.zip
-
-    log "Installing AWS CLI..."
-    sudo ./aws/install
-
-    log "Cleaning up..."
-    rm -r awscliv2.zip aws
-}
-
 configure_aws_sso() {
+    # Check if AWS SSO is already configured
+    if [[ -n "$(aws configure sso list-profiles)" ]]; then
+        echo "AWS SSO is already configured."
+        return
+    fi
+
     echo "Please confirm that you have AWS access using AWS SSO."
     read -rp "Have you logged in to AWS SSO and confirmed your access? (yes/no): " aws_access_confirmed
 
     if [ "$aws_access_confirmed" = "yes" ]; then
-        read -rp "Enter your AWS SSO profile name (e.g., qapita-yourname): " profile_name
+        read -rp "Enter name for your AWS SSO (e.g., qapita-yourname): " profile_name
         aws configure sso
         export AWS_PROFILE="$profile_name"
         export AWS_REGION=ap-south-1
@@ -137,13 +143,14 @@ configure_aws_sso() {
     fi
 }
 
+
 # Function for checking and installing Node.js with NVM
 install_nodejs_with_nvm() {
     # Check if nvm is installed
     if ! command -v nvm &>/dev/null; then
         # Install nvm
         log "Installing NVM..."
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
         if [ -z "${XDG_CONFIG_HOME-}" ]; then
             NVM_DIR="${HOME}/.nvm"
         else
@@ -247,15 +254,14 @@ install_mongodb() {
     local mongodb_data_dir="/mongodb-data" # Directory for MongoDB data storage
     local version_codename
     version_codename="$(lsb_release -cs)"
-
     log "Installing MongoDB..."
 
     if [ "$version_codename" == "jammy" ]; then
-        curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg -o /etc/apt/trusted.gpg.d/mongodb-server-7.0.gpg --dearmor
-        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        curl -fsSL https://pgp.mongodb.com/server-6.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
     elif [ "$version_codename" == "focal" ]; then
-        curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
-        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        curl -fsSL https://pgp.mongodb.com/server-6.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
     else
         log "Unsupported Ubuntu version."
         exit 1
@@ -443,7 +449,9 @@ configure_aws_sso
 mkdir -p ~/machine-setup/{certificates,eventstoredb,mongodb} ~/local/.bin
 
 # copy files from qapita-dev-development s3 bucket to ~/machine-setup
-aws s3 cp s3://qapita-dev-development/machine-setup/ ~/machine-setup/ --recursive
+aws s3 cp s3://qapita-dev-development/machine-setup/certificates ~/machine-setup/certificates --recursive
+aws s3 cp s3://qapita-dev-development/machine-setup/mongodb ~/machine-setup/mongodb --recursive
+aws s3 cp s3://qapita-dev-development/machine-setup/eventstoredb ~/machine-setup/eventstoredb --recursive
 
 export QAPITA_WORKSPACE=~/qapita-workspace
 
@@ -469,8 +477,13 @@ sudo sysctl -p
 
 # copy qapita-CA.crt (self generated root certificate) to the right folder
 # this is required for https to work in local urls (https://qmap.qapitacorp.local, etc.)
-sudo cp ~/machine-setup/certificates/qapita-CA.crt /usr/local/share/ca-certificates
-sudo update-ca-certificates
+if [ -f "$HOME/machine-setup/certificates/qapita-CA.crt" ]; then
+    sudo cp ~/machine-setup/certificates/qapita-CA.crt /usr/local/share/ca-certificates
+    sudo update-ca-certificates
+else
+    echo "qapita-CA.crt not found"
+fi
+
 # Update chrome to trust our root certificate
 #chrome://settings/advanced
 #    Manage Certificates
@@ -493,7 +506,7 @@ else
 fi
 
 # Install Node.js with NVM and required packages
-# install_nodejs_with_nvm
+install_nodejs_with_nvm
 
 # Install .NET if not already installed
 if ! command -v dotnet &>/dev/null; then
