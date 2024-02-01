@@ -123,6 +123,7 @@ configure_aws_sso() {
     # Check if AWS SSO is already configured
     if [[ -n "$(aws configure sso list-profiles)" ]]; then
         echo "AWS SSO is already configured."
+        aws configure sso list-profiles
         return
     fi
 
